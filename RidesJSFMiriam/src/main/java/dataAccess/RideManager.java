@@ -15,17 +15,6 @@ public class RideManager {
     public RideManager() {
         dataAccess = new HibernateDataAccess();
     }
-
-    /**
-     * Crea y almacena un viaje en la base de datos.
-     *
-     * @param from     Origen del viaje
-     * @param to       Destino del viaje
-     * @param date     Fecha del viaje
-     * @param nPlaces  Número de plazas disponibles
-     * @param price    Precio del viaje
-     * @param active   Estado del viaje (activo/inactivo)
-     */
     private void createAndStoreRide(String from, String to, Date date, int nPlaces, float price, Driver driver) {
 
         Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -45,12 +34,6 @@ public class RideManager {
             e.printStackTrace();
         }
     }
-
-    /**
-     * Recupera todos los viajes almacenados en la base de datos.
-     *
-     * @return Lista de objetos Ride
-     */
     private List<Ride> getAllRides() {
         Session session = HibernateUtil.getSessionFactory().getCurrentSession();
         Transaction tx = null;
@@ -72,15 +55,12 @@ public class RideManager {
         try {
 			dataAccess.initializeDB();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-        // Crear un viaje de ejemplo
         manager.createAndStoreRide("Bilbao", "San Sebastian", new Date(), 3, 15.5f, d);
         manager.createAndStoreRide("a", "b", new Date(), 2, 40f, d);
         manager.createAndStoreRide("c", "d", new Date(), 4, 35f, d);
         manager.createAndStoreRide("e", "f", new Date(), 3, 30f, d);
-        // Obtener y mostrar todos los viajes
         List<Ride> rides = manager.getAllRides();
         if (rides != null) {
             for (Ride ride : rides) {

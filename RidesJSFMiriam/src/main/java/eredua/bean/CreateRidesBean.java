@@ -78,14 +78,11 @@ public class CreateRidesBean implements Serializable {
 	}
 
 	public Ride createRide() {
-	    // Verificar si la fecha es nula
 	    if (data == null || 
 	            departCity == null || departCity.trim().isEmpty() ||
 	            arrivalCity == null || arrivalCity.trim().isEmpty() ||
 	            seats == null || seats <= 0 ||
 	            price <= 0) {
-	            
-	            // Mostrar mensaje de error si faltan datos
 	            FacesContext.getCurrentInstance().addMessage(null,
 	                new FacesMessage(FacesMessage.SEVERITY_ERROR, 
 	                    "Ez dituzu datu guztiak bete", 
@@ -94,10 +91,7 @@ public class CreateRidesBean implements Serializable {
 	        }
 	    String email = "driver1@gmail.com";
 	    try {
-	        // El resto del cÃ³digo permanece igual
 	        Ride ride = hda.createRide(departCity, arrivalCity, data, seats, price, email);
-
-	        // Mezu arrakastatsua gehitu
 	        FacesContext.getCurrentInstance().addMessage(null,
 	                new FacesMessage(FacesMessage.SEVERITY_INFO, "Ride-a ondo sortu da", null));
 	        return ride;

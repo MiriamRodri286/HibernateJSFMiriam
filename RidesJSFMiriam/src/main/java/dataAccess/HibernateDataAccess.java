@@ -24,9 +24,7 @@ public class HibernateDataAccess {
      * Initializes the database with sample data.
      */
     public void initializeDB() {
-        session = HibernateUtil.getSessionFactory().getCurrentSession();
-        session.beginTransaction();
-
+        open();
         try {
             Calendar today = Calendar.getInstance();
             int month = today.get(Calendar.MONTH);
@@ -35,13 +33,9 @@ public class HibernateDataAccess {
                 month = 1;
                 year += 1;
             }
-
-            // Check if drivers already exist before persisting
             Driver driver1 = (Driver) session.get(Driver.class, "driver1@gmail.com");
             Driver driver2 = (Driver) session.get(Driver.class, "driver2@gmail.com");
             Driver driver3 = (Driver) session.get(Driver.class, "driver3@gmail.com");
-
-            // Only create and persist drivers that don't exist
             if (driver1 == null) {
                 driver1 = new Driver("driver1@gmail.com", "Aitor Fernandez");
                 driver1.addRide("Donostia", "Bilbo", UtilDate.newDate(year, month, 15), 4, 7);
@@ -76,8 +70,6 @@ public class HibernateDataAccess {
     }
 
     public List<String> getDepartCities() {
-        //session = HibernateUtil.getSessionFactory().getCurrentSession();
-        //session.beginTransaction();
     	open();
         try {
             List<String> result = session.createQuery("SELECT DISTINCT r.froml FROM Ride r ORDER BY r.froml").list();
@@ -96,9 +88,6 @@ public class HibernateDataAccess {
     	open();
         List<String> cities = new ArrayList<>();
         try {
-            //session = HibernateUtil.getSessionFactory().getCurrentSession();
-            //session.beginTransaction();
-
             cities = session.createQuery("SELECT DISTINCT r.tol FROM Ride r WHERE r.froml = :departCity ORDER BY r.tol")
                     .setParameter("departCity", from).list();
 
@@ -120,7 +109,6 @@ public class HibernateDataAccess {
         session.beginTransaction();
         System.out.println(">> DataAccess: createRide=> from= " + from + " to= " + to + " driver=" + driverEmail
                 + " date " + date);
-
         try {
             if (new Date().compareTo(date) > 0) {
                 throw new RideMustBeLaterThanTodayException(
@@ -162,8 +150,6 @@ public class HibernateDataAccess {
 
 
     public List<Ride> getRides(String from, String to, Date date) {
-        //session = HibernateUtil.getSessionFactory().getCurrentSession();
-        //session.beginTransaction();
     	open();
         System.out.println(">> DataAccess: getRides=> from= " + from + " to= " + to + " date " + date);
 
