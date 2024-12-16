@@ -40,7 +40,7 @@ public class RideManager {
         List<Ride> rides = null;
         try {
             tx = session.beginTransaction();
-            rides = session.createQuery("from Ride").list();
+            rides = session.createQuery("SELECT r FROM Ride r").list();
             tx.commit();
         } catch (Exception e) {
             if (tx != null) tx.rollback();

@@ -41,7 +41,7 @@ public class HibernateDataAccess {
                 driver1.addRide("Donostia", "Bilbo", UtilDate.newDate(year, month, 15), 4, 7);
                 driver1.addRide("Donostia", "Gazteiz", UtilDate.newDate(year, month, 6), 4, 8);
                 driver1.addRide("Bilbo", "Donostia", UtilDate.newDate(year, month, 25), 4, 4);
-                driver1.addRide("Donostia", "Iruña", UtilDate.newDate(year, month, 7), 4, 8);
+                driver1.addRide("Donostia", "Iruna", UtilDate.newDate(year, month, 7), 4, 8);
                 session.persist(driver1);
             }
 
