@@ -36,36 +36,49 @@ public class HibernateDataAccess {
                 year += 1;
             }
 
-            // Create drivers
-            Driver driver1 = new Driver("driver1@gmail.com", "Aitor Fernandez");
-            Driver driver2 = new Driver("driver2@gmail.com", "Ane Gaztañaga");
-            Driver driver3 = new Driver("driver3@gmail.com", "Test driver");
+            // Check if drivers already exist before persisting
+            Driver driver1 = (Driver) session.get(Driver.class, "driver1@gmail.com");
+            Driver driver2 = (Driver) session.get(Driver.class, "driver2@gmail.com");
+            Driver driver3 = (Driver) session.get(Driver.class, "driver3@gmail.com");
 
-            // Create rides
-            driver1.addRide("Donostia", "Bilbo", UtilDate.newDate(year, month, 15), 4, 7);
-            driver1.addRide("Donostia", "Gazteiz", UtilDate.newDate(year, month, 6), 4, 8);
-            driver1.addRide("Bilbo", "Donostia", UtilDate.newDate(year, month, 25), 4, 4);
-            driver1.addRide("Donostia", "Iruña", UtilDate.newDate(year, month, 7), 4, 8);
-            driver2.addRide("Donostia", "Bilbo", UtilDate.newDate(year, month, 15), 3, 3);
-            driver2.addRide("Bilbo", "Donostia", UtilDate.newDate(year, month, 25), 2, 5);
-            driver2.addRide("Eibar", "Gasteiz", UtilDate.newDate(year, month, 6), 2, 5);
+            // Only create and persist drivers that don't exist
+            if (driver1 == null) {
+                driver1 = new Driver("driver1@gmail.com", "Aitor Fernandez");
+                driver1.addRide("Donostia", "Bilbo", UtilDate.newDate(year, month, 15), 4, 7);
+                driver1.addRide("Donostia", "Gazteiz", UtilDate.newDate(year, month, 6), 4, 8);
+                driver1.addRide("Bilbo", "Donostia", UtilDate.newDate(year, month, 25), 4, 4);
+                driver1.addRide("Donostia", "Iruña", UtilDate.newDate(year, month, 7), 4, 8);
+                session.persist(driver1);
+            }
 
-            driver3.addRide("Bilbo", "Donostia", UtilDate.newDate(year, month, 14), 1, 3);
+            if (driver2 == null) {
+                driver2 = new Driver("driver2@gmail.com", "Ane Gaztañaga");
+                driver2.addRide("Donostia", "Bilbo", UtilDate.newDate(year, month, 15), 3, 3);
+                driver2.addRide("Bilbo", "Donostia", UtilDate.newDate(year, month, 25), 2, 5);
+                driver2.addRide("Eibar", "Gasteiz", UtilDate.newDate(year, month, 6), 2, 5);
+                session.persist(driver2);
+            }
 
-            session.persist(driver1);
-            session.persist(driver2);
-            session.persist(driver3);
+            if (driver3 == null) {
+                driver3 = new Driver("driver3@gmail.com", "Test driver");
+                driver3.addRide("Bilbo", "Donostia", UtilDate.newDate(year, month, 14), 1, 3);
+                session.persist(driver3);
+            }
 
             session.getTransaction().commit();
             System.out.println("Db initialized");
         } catch (Exception e) {
+            if (session.getTransaction().isActive()) {
+                session.getTransaction().rollback();
+            }
             e.printStackTrace();
         }
     }
 
     public List<String> getDepartCities() {
-        session = HibernateUtil.getSessionFactory().getCurrentSession();
-        session.beginTransaction();
+        //session = HibernateUtil.getSessionFactory().getCurrentSession();
+        //session.beginTransaction();
+    	open();
         try {
             List<String> result = session.createQuery("SELECT DISTINCT r.froml FROM Ride r ORDER BY r.froml").list();
             session.getTransaction().commit();
@@ -74,14 +87,17 @@ public class HibernateDataAccess {
             session.getTransaction().rollback();
             e.printStackTrace();
             return new ArrayList<>();
+        }finally {
+        	close();
         }
     }
 
     public List<String> getArrivalCities(String from) {
+    	open();
         List<String> cities = new ArrayList<>();
         try {
-            session = HibernateUtil.getSessionFactory().getCurrentSession();
-            session.beginTransaction();
+            //session = HibernateUtil.getSessionFactory().getCurrentSession();
+            //session.beginTransaction();
 
             cities = session.createQuery("SELECT DISTINCT r.tol FROM Ride r WHERE r.froml = :departCity ORDER BY r.tol")
                     .setParameter("departCity", from).list();
@@ -92,6 +108,8 @@ public class HibernateDataAccess {
                 session.getTransaction().rollback();
             }
             e.printStackTrace();
+        }finally {
+        	close();
         }
         return cities;
     }
@@ -102,34 +120,51 @@ public class HibernateDataAccess {
         session.beginTransaction();
         System.out.println(">> DataAccess: createRide=> from= " + from + " to= " + to + " driver=" + driverEmail
                 + " date " + date);
+
         try {
             if (new Date().compareTo(date) > 0) {
                 throw new RideMustBeLaterThanTodayException(
-                        ResourceBundle.getBundle("Etiquetas").getString("CreateRideGUI.ErrorRideMustBeLaterThanToday"));
+                        "Ridea ez da gaur baino atzerago izan");
             }
-
             Driver driver = (Driver) session.get(Driver.class, driverEmail);
-            Hibernate.initialize(driver.getEmail()); // Initialize lazy property
-
-            if (driver.doesRideExists(from, to, date)) {
-                session.getTransaction().commit();
+            Hibernate.initialize(driver.getEmail());
+            if (doesRideExistInDatabase(from, to, date)) {
+                session.getTransaction().rollback(); 
                 throw new RideAlreadyExistException(
-                        ResourceBundle.getBundle("Etiquetas").getString("DataAccess.RideAlreadyExist"));
+                        "datubasean jada badago");
             }
-
             Ride ride = driver.addRide(from, to, date, nPlaces, price);
             session.persist(driver);
             session.getTransaction().commit();
             return ride;
         } catch (NullPointerException e) {
             session.getTransaction().rollback();
+            e.printStackTrace();
             return null;
         }
     }
 
+    private boolean doesRideExistInDatabase(String from, String to, Date date) {
+        try {
+            Query query = session.createQuery("SELECT r FROM Ride r WHERE r.froml = :from AND r.tol = :to AND r.date = :date");
+            query.setParameter("from", from);
+            query.setParameter("to", to);
+            query.setParameter("date", date);
+
+            List<Ride> rides = query.list();
+            return !rides.isEmpty();
+        } catch (Exception e) {
+            session.getTransaction().rollback();
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
     public List<Ride> getRides(String from, String to, Date date) {
-        session = HibernateUtil.getSessionFactory().getCurrentSession();
-        session.beginTransaction();
+        //session = HibernateUtil.getSessionFactory().getCurrentSession();
+        //session.beginTransaction();
+    	open();
         System.out.println(">> DataAccess: getRides=> from= " + from + " to= " + to + " date " + date);
 
         List<Ride> res = new ArrayList<>();
@@ -149,6 +184,8 @@ public class HibernateDataAccess {
         } catch (Exception e) {
             session.getTransaction().rollback();
             e.printStackTrace();
+        }finally {
+        	close();
         }
         return res;
     }

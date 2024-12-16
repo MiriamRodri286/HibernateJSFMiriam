@@ -21,7 +21,7 @@ public class Ride implements Serializable {
 	private int nPlaces;
 	private Date date;
 	private float price;
-	@ManyToOne(fetch = FetchType.LAZY)
+	@ManyToOne(fetch = FetchType.EAGER)
 	
     @JoinColumn(name = "driver_email", referencedColumnName = "email")
 	private Driver driver;  
